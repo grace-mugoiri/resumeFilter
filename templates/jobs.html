@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Matches - Resume Filter</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Your Job Matches</h1>
+            <p class="subtitle">Ranked by how well they match your resume</p>
+        </header>
+
+        <div class="filters-section">
+            <div class="filter">
+                <label for="locationFilter">Location:</label>
+                <input type="text" id="locationFilter" placeholder="Filter by location">
+            </div>
+            <div class="filter">
+                <label for="salaryFilter">Min Salary:</label>
+                <input type="number" id="salaryFilter" placeholder="e.g., 80000">
+            </div>
+            <button class="btn btn-secondary" onclick="resetFilters()">Reset Filters</button>
+            <a href="/favorites" class="btn btn-outline">View Favorites ★</a>
+        </div>
+
+        <div id="jobsContainer" class="jobs-list">
+            <!-- Job cards will be dynamically inserted here -->
+        </div>
+
+        <div id="loadingIndicator" class="hidden">
+            <p>Loading job matches...</p>
+            <div class="spinner"></div>
+        </div>
+
+        <div id="noResults" class="hidden">
+            <p>No jobs found matching your criteria. Try adjusting your filters.</p>
+        </div>
+    </div>
+
+    <!-- Job details modal -->
+    <div id="jobModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeJobModal()">&times;</span>
+            <div id="modalBody"></div>
+            <button class="btn btn-primary" onclick="generateCoverLetter()">Generate Cover Letter</button>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

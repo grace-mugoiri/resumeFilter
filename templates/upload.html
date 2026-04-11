@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Resume - Resume Filter</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="/" class="back-link">← Back</a>
+            <h1>Upload Your Resume</h1>
+        </header>
+
+        <div class="form-section">
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="upload-area">
+                    <div class="upload-icon">📄</div>
+                    <h2>Drag and drop your resume here</h2>
+                    <p>or</p>
+                    <input type="file" id="fileInput" name="resume" accept=".pdf,.docx,.doc,.txt" required>
+                    <label for="fileInput" class="btn btn-primary">Choose File</label>
+                    <p class="file-info">Supported formats: PDF, Word, Text</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="location">Preferred Location (optional)</label>
+                    <input type="text" id="location" name="location" placeholder="e.g., San Francisco, CA or Remote">
+                </div>
+
+                <div class="form-group">
+                    <label for="min_salary">Minimum Salary (optional)</label>
+                    <input type="number" id="min_salary" name="min_salary" placeholder="e.g., 80000">
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-large">Analyze Resume & Find Jobs</button>
+            </form>
+
+            <div id="loadingIndicator" class="hidden">
+                <p>Analyzing your resume...</p>
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

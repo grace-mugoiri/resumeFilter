@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Resume - Resume Filter</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="/" class="back-link">← Back</a>
+            <h1>Create Your Resume</h1>
+        </header>
+
+        <div class="form-section">
+            <div class="tab-buttons">
+                <button class="tab-btn active" onclick="switchTab('form')">Form Builder</button>
+                <button class="tab-btn" onclick="switchTab('text')">Free Text Editor</button>
+            </div>
+
+            <div id="formTab" class="tab-content active">
+                <form id="resumeForm">
+                    <fieldset>
+                        <legend>Personal Information</legend>
+                        <div class="form-group">
+                            <label for="full_name">Full Name *</label>
+                            <input type="text" id="full_name" name="full_name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email *</label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Phone</label>
+                            <input type="tel" id="phone" name="phone">
+                        </div>
+                        <div class="form-group">
+                            <label for="location">Location</label>
+                            <input type="text" id="location" name="location" placeholder="City, State">
+                        </div>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Professional Summary</legend>
+                        <div class="form-group">
+                            <label for="summary">Summary (2-3 lines)</label>
+                            <textarea id="summary" name="summary" rows="4" placeholder="Brief overview of your professional background..."></textarea>
+                        </div>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Skills *</legend>
+                        <div class="form-group">
+                            <label for="skills">Skills (comma-separated)</label>
+                            <textarea id="skills" name="skills" rows="3" placeholder="e.g., Python, JavaScript, React, Project Management" required></textarea>
+                        </div>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Experience</legend>
+                        <div id="experienceContainer"></div>
+                        <button type="button" class="btn btn-secondary" onclick="addExperience()">+ Add Experience</button>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Education</legend>
+                        <div id="educationContainer"></div>
+                        <button type="button" class="btn btn-secondary" onclick="addEducation()">+ Add Education</button>
+                    </fieldset>
+
+                    <div class="form-group">
+                        <label for="pref_location">Preferred Job Location (optional)</label>
+                        <input type="text" id="pref_location" name="pref_location" placeholder="e.g., San Francisco, CA or Remote">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="min_salary">Minimum Salary (optional)</label>
+                        <input type="number" id="min_salary" name="min_salary" placeholder="e.g., 80000">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-large">Create & Find Jobs</button>
+                </form>
+            </div>
+
+            <div id="textTab" class="tab-content">
+                <form id="textForm">
+                    <div class="form-group">
+                        <label for="resumeText">Paste Your Resume Here</label>
+                        <textarea id="resumeText" name="resume_text" rows="15" placeholder="Paste your resume text..." required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="pref_location_text">Preferred Job Location (optional)</label>
+                        <input type="text" id="pref_location_text" name="pref_location" placeholder="e.g., San Francisco, CA or Remote">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-large">Analyze Resume & Find Jobs</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
