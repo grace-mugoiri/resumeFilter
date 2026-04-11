@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Job Matches - Resume Filter</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
     <div class="container">
         <header>
@@ -45,10 +47,14 @@
         <div class="modal-content">
             <span class="close-btn" onclick="closeJobModal()">&times;</span>
             <div id="modalBody"></div>
-            <button class="btn btn-primary" onclick="generateCoverLetter()">Generate Cover Letter</button>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="previewCoverLetter()">Preview Cover Letter</button>
+                <button class="btn btn-primary" onclick="generateCoverLetter()">Download Cover Letter</button>
+            </div>
         </div>
     </div>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
+
 </html>

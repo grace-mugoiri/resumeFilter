@@ -168,14 +168,91 @@ def match_jobs():
     }
     jobs = fetch_jobs_from_api(criteria)
     jobs = match_resume_to_jobs(resume_data, jobs)
+
+    # Store matched jobs in session for cover letter generation
+    session['matched_jobs'] = jobs
+    session.modified = True
+
     return jsonify({'jobs': jobs, 'matches': [job.get('match_score', 0) for job in jobs]})
 
 
 @app.route('/api/generate-cover-letter', methods=['POST'])
 def generate_cover_letter():
     """Generate cover letter using resume + job description."""
-    # TODO: AI-powered cover letter generation
-    return jsonify({'cover_letter': ''})
+    data = request.get_json()
+    job_id = data.get('job_id')
+    resume_data = session.get('resume_data')
+
+    if not resume_data or not job_id:
+        return jsonify({'error': 'Missing resume data or job ID'}), 400
+
+    # Get job details from the matched jobs in session
+    matched_jobs = session.get('matched_jobs', [])
+    job_data = None
+    for job in matched_jobs:
+        if str(job.get('id')) == str(job_id):
+            job_data = job
+            break
+
+    # Generate cover letter
+    cover_letter = generate_cover_letter_content(resume_data, job_data or {})
+
+    # Return as downloadable file
+    from flask import send_file
+    import io
+
+    # Create an in-memory file
+    file_obj = io.BytesIO(cover_letter.encode('utf-8'))
+    file_obj.seek(0)
+
+    return send_file(
+        file_obj,
+        mimetype='text/plain',
+        as_attachment=True,
+        download_name=f'cover_letter_{job_id}.txt'
+    )
+
+
+def generate_cover_letter_content(resume_data, job_data):
+    """Generate a simple cover letter based on resume and job data."""
+    name = resume_data.get('name', 'Applicant')
+    skills = resume_data.get('skills', [])
+    if isinstance(skills, str):
+        skills = [skill.strip() for skill in skills.split(',') if skill.strip()]
+
+    # Use actual job data
+    job_title = job_data.get('title', 'Software Engineer')
+    company_name = job_data.get('company', 'Tech Company')
+
+    # Simple cover letter template
+    cover_letter = f"""[Your Name]
+[Your Address]
+[City, State, ZIP Code]
+[Email Address]
+[Phone Number]
+[Date]
+
+Hiring Manager
+{company_name}
+[Company Address]
+[City, State, ZIP Code]
+
+Dear Hiring Manager,
+
+I am writing to express my strong interest in the {job_title} position at {company_name}. With my background in {', '.join(skills[:3]) if skills else 'various technologies'}, I am excited about the opportunity to contribute to your innovative team.
+
+My experience includes working with {', '.join(skills) if skills else 'relevant technologies'}, and I am confident that my skills and passion for technology would make me a valuable addition to your organization.
+
+I would welcome the opportunity to discuss how my background, skills, and enthusiasm can contribute to {company_name}'s continued success.
+
+Thank you for considering my application. I look forward to the possibility of speaking with you soon.
+
+Sincerely,
+{name}
+"""
+
+    return cover_letter
+
 
 
 @app.route('/api/save-job', methods=['POST'])

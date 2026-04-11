@@ -13,7 +13,7 @@ function switchTab(tab) {
 function addExperience() {
     const container = document.getElementById('experienceContainer') || document.getElementById('experienceList');
     const index = container.children.length;
-    
+
     const exp = document.createElement('div');
     exp.className = 'form-group';
     exp.innerHTML = `
@@ -34,7 +34,7 @@ function addExperience() {
 function addEducation() {
     const container = document.getElementById('educationContainer') || document.getElementById('educationList');
     const index = container.children.length;
-    
+
     const edu = document.createElement('div');
     edu.className = 'form-group';
     edu.innerHTML = `
@@ -147,7 +147,7 @@ async function loadJobMatches() {
 }
 
 // Handle file upload
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const uploadForm = document.getElementById('uploadForm');
     if (uploadForm) {
         uploadForm.addEventListener('submit', async (e) => {
@@ -170,9 +170,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const fileInput = document.getElementById('fileInput');
     const selectedFileDisplay = document.getElementById('selectedFile');
     const uploadArea = document.querySelector('.upload-area');
-    
+
     if (fileInput && selectedFileDisplay) {
-        fileInput.addEventListener('change', function(e) {
+        fileInput.addEventListener('change', function (e) {
             const file = e.target.files[0];
             if (file) {
                 selectedFileDisplay.textContent = `Selected: ${file.name}`;
@@ -186,23 +186,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Handle drag and drop
     if (uploadArea && fileInput) {
-        uploadArea.addEventListener('dragover', function(e) {
+        uploadArea.addEventListener('dragover', function (e) {
             e.preventDefault();
             uploadArea.style.backgroundColor = '#f0f0ff';
             uploadArea.style.borderColor = '#764ba2';
         });
 
-        uploadArea.addEventListener('dragleave', function(e) {
+        uploadArea.addEventListener('dragleave', function (e) {
             e.preventDefault();
             uploadArea.style.backgroundColor = '#f8f9ff';
             uploadArea.style.borderColor = '#667eea';
         });
 
-        uploadArea.addEventListener('drop', function(e) {
+        uploadArea.addEventListener('drop', function (e) {
             e.preventDefault();
             uploadArea.style.backgroundColor = '#f8f9ff';
             uploadArea.style.borderColor = '#667eea';
-            
+
             const files = e.dataTransfer.files;
             if (files.length > 0) {
                 fileInput.files = files;
@@ -232,7 +232,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const tabBtns = document.querySelectorAll('.tab-btn');
     tabBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
             const tabId = this.dataset.tab;
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -259,10 +259,10 @@ function closeJobModal() {
 }
 
 // Close modal when clicking outside
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const modal = document.getElementById('jobModal');
     if (modal) {
-        modal.addEventListener('click', function(e) {
+        modal.addEventListener('click', function (e) {
             if (e.target === modal) {
                 closeJobModal();
             }
@@ -270,8 +270,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Generate cover letter
-function generateCoverLetter() {
+// Preview cover letter
+function previewCoverLetter() {
     const job = JSON.parse(sessionStorage.getItem('selectedJob'));
     if (!job) {
         alert('Please select a job first.');
@@ -283,10 +283,77 @@ function generateCoverLetter() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ job_id: job.id })
     })
-    .then(r => r.json())
-    .then(data => {
-        alert('Cover letter generated!\n\n' + data.cover_letter);
-    });
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to generate cover letter');
+            }
+            return response.text();
+        })
+        .then(coverLetterText => {
+            // Show preview in a new modal or alert
+            const previewModal = document.createElement('div');
+            previewModal.className = 'modal';
+            previewModal.innerHTML = `
+            <div class="modal-content" style="max-width: 800px;">
+                <span class="close-btn" onclick="this.parentElement.parentElement.remove()">&times;</span>
+                <h2>Cover Letter Preview</h2>
+                <pre style="white-space: pre-wrap; font-family: monospace; background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0; max-height: 400px; overflow-y: auto;">${coverLetterText}</pre>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" onclick="this.parentElement.parentElement.remove()">Close</button>
+                    <button class="btn btn-primary" onclick="downloadCoverLetter('${job.id}')">Download</button>
+                </div>
+            </div>
+        `;
+            document.body.appendChild(previewModal);
+        })
+        .catch(error => {
+            console.error('Error generating cover letter:', error);
+            alert('Error generating cover letter: ' + error.message);
+        });
+}
+
+// Generate cover letter (now downloads directly)
+function generateCoverLetter() {
+    const job = JSON.parse(sessionStorage.getItem('selectedJob'));
+    if (!job) {
+        alert('Please select a job first.');
+        return;
+    }
+
+    downloadCoverLetter(job.id);
+}
+
+// Download cover letter as file
+function downloadCoverLetter(jobId) {
+    fetch('/api/generate-cover-letter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job_id: jobId })
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to generate cover letter');
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            // Create download link
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = `cover_letter_${jobId}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+            alert('Cover letter downloaded successfully!');
+        })
+        .catch(error => {
+            console.error('Error downloading cover letter:', error);
+            alert('Error downloading cover letter: ' + error.message);
+        });
 }
 
 // Reset filters

@@ -68,7 +68,8 @@ header h1 {
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.tagline, .subtitle {
+.tagline,
+.subtitle {
     font-size: 1.2em;
     opacity: 0.95;
 }
@@ -303,7 +304,8 @@ header h1 {
     margin-top: 40px;
 }
 
-.features h2, .features h3 {
+.features h2,
+.features h3 {
     color: #333;
     margin-bottom: 20px;
 }
@@ -406,8 +408,13 @@ header h1 {
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 .hidden {
@@ -445,6 +452,7 @@ header h1 {
         transform: translateY(-50px);
         opacity: 0;
     }
+
     to {
         transform: translateY(0);
         opacity: 1;
@@ -460,6 +468,14 @@ header h1 {
 
 .close-btn:hover {
     color: #333;
+}
+
+/* Modal actions */
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
 }
 
 /* Responsive */
