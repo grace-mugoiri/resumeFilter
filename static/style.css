@@ -231,6 +231,7 @@ header h1 {
     background: #f8f9ff;
     margin-bottom: 30px;
     transition: all 0.3s;
+    cursor: pointer;
 }
 
 .upload-area:hover {
@@ -254,6 +255,7 @@ header h1 {
 .file-info {
     color: #999;
     margin-top: 10px;
+    font-size: 0.9em;
 }
 
 /* Tabs */
@@ -414,7 +416,6 @@ header h1 {
 
 /* Modal */
 .modal {
-    display: none;
     position: fixed;
     z-index: 1000;
     left: 0;
@@ -436,6 +437,7 @@ header h1 {
     max-width: 600px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     animation: slideIn 0.3s ease;
+    color: #333;
 }
 
 @keyframes slideIn {

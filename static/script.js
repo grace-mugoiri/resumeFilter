@@ -61,7 +61,9 @@ function renderJobs(jobs) {
     }
 
     noResults.classList.add('hidden');
-    jobs.forEach(job => {
+    console.log('Rendering', jobs.length, 'jobs');
+    jobs.forEach((job, index) => {
+        console.log('Rendering job', index, job.title);
         const card = document.createElement('div');
         card.className = 'job-card';
         card.innerHTML = `
@@ -76,7 +78,10 @@ function renderJobs(jobs) {
         const detailsButton = document.createElement('button');
         detailsButton.className = 'btn btn-primary';
         detailsButton.textContent = 'View Details';
-        detailsButton.addEventListener('click', () => openJobModal(job));
+        detailsButton.addEventListener('click', () => {
+            console.log('Button clicked for job:', job.title);
+            openJobModal(job);
+        });
 
         card.appendChild(detailsButton);
         jobsContainer.appendChild(card);
@@ -84,9 +89,12 @@ function renderJobs(jobs) {
 }
 
 function openJobModal(job) {
+    console.log('Opening modal for job:', job);
     sessionStorage.setItem('selectedJob', JSON.stringify(job));
     const modal = document.getElementById('jobModal');
     const modalBody = document.getElementById('modalBody');
+    console.log('Modal element:', modal);
+    console.log('Modal body element:', modalBody);
     modalBody.innerHTML = `
         <h2>${job.title}</h2>
         <p><strong>${job.company}</strong> — ${job.location}</p>
@@ -96,6 +104,7 @@ function openJobModal(job) {
         ${job.url ? `<p><a href="${job.url}" target="_blank" rel="noopener noreferrer" class="btn btn-primary">Apply / View Job</a></p>` : ''}
     `;
     modal.classList.remove('hidden');
+    console.log('Modal should now be visible');
 }
 
 function applyFilters() {
@@ -122,11 +131,15 @@ async function loadJobMatches() {
     jobsContainer.innerHTML = '';
 
     try {
+        console.log('Loading job matches...');
         const response = await fetch('/api/match-jobs', { method: 'POST' });
         const data = await response.json();
+        console.log('Job data received:', data);
         loadedJobs = data.jobs || [];
+        console.log('Loaded jobs:', loadedJobs.length);
         renderJobs(loadedJobs);
     } catch (error) {
+        console.error('Error loading jobs:', error);
         document.getElementById('noResults').classList.remove('hidden');
     } finally {
         loadingIndicator.classList.add('hidden');
@@ -153,24 +166,52 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    const resumeForm = document.getElementById('resumeForm');
-    if (resumeForm) {
-        resumeForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(resumeForm);
-
-            try {
-                await fetch('/api/parse-resume', {
-                    method: 'POST',
-                    body: formData
-                });
-                window.location.href = '/jobs';
-            } catch (error) {
-                alert('Error creating resume: ' + error.message);
+    // Handle file selection display
+    const fileInput = document.getElementById('fileInput');
+    const selectedFileDisplay = document.getElementById('selectedFile');
+    const uploadArea = document.querySelector('.upload-area');
+    
+    if (fileInput && selectedFileDisplay) {
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                selectedFileDisplay.textContent = `Selected: ${file.name}`;
+                selectedFileDisplay.style.color = '#667eea';
+            } else {
+                selectedFileDisplay.textContent = 'No file selected';
+                selectedFileDisplay.style.color = '#999';
             }
         });
     }
 
+    // Handle drag and drop
+    if (uploadArea && fileInput) {
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadArea.style.backgroundColor = '#f0f0ff';
+            uploadArea.style.borderColor = '#764ba2';
+        });
+
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            uploadArea.style.backgroundColor = '#f8f9ff';
+            uploadArea.style.borderColor = '#667eea';
+        });
+
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.style.backgroundColor = '#f8f9ff';
+            uploadArea.style.borderColor = '#667eea';
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                const file = files[0];
+                selectedFileDisplay.textContent = `Selected: ${file.name}`;
+                selectedFileDisplay.style.color = '#667eea';
+            }
+        });
+    }
     const textForm = document.getElementById('textForm');
     if (textForm) {
         textForm.addEventListener('submit', async (e) => {
@@ -216,6 +257,18 @@ document.addEventListener('DOMContentLoaded', function() {
 function closeJobModal() {
     document.getElementById('jobModal').classList.add('hidden');
 }
+
+// Close modal when clicking outside
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('jobModal');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeJobModal();
+            }
+        });
+    }
+});
 
 // Generate cover letter
 function generateCoverLetter() {
