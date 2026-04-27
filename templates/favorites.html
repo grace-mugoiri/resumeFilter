@@ -3,33 +3,34 @@
 {% block title %}Favorite Jobs - Resume Filter{% endblock %}
 
 {% block content %}
-    <section class="favorites-section">
-        <h2>Your Favorite Jobs</h2>
-        {% if favorites %}
-            <div class="jobs-list">
-                {% for favorite in favorites %}
-                    <div class="job-card">
-                        <div class="job-header">
-                            <h3>{{ favorite.job_title }}</h3>
-                            {% if favorite.source %}
-                                <span class="job-source">{{ favorite.source }}</span>
-                            {% endif %}
-                        </div>
-                        <div class="company">{{ favorite.company }}</div>
-                        <div class="location">{{ favorite.location }}</div>
-                        <div class="salary">{{ favorite.salary }}</div>
-                        <p class="description">{{ favorite.description[:200] }}{% if favorite.description|length > 200 %}...{% endif %}</p>
-                        {% if favorite.url %}
-                            <a href="{{ favorite.url }}" target="_blank" class="btn btn-primary">View Job</a>
-                        {% endif %}
-                    </div>
-                {% endfor %}
+<section class="favorites-section">
+    <h2>Your Favorite Jobs</h2>
+    {% if favorites %}
+    <div class="jobs-list">
+        {% for favorite in favorites %}
+        <div class="job-card">
+            <div class="job-header">
+                <h3>{{ favorite.job_title }}</h3>
+                {% if favorite.source %}
+                <span class="job-source">{{ favorite.source }}</span>
+                {% endif %}
             </div>
-        {% else %}
-            <div class="no-favorites">
-                <p>You haven't saved any jobs yet.</p>
-                <a href="/jobs" class="btn btn-primary">Find Jobs</a>
-            </div>
-        {% endif %}
-    </section>
+            <div class="company">{{ favorite.company }}</div>
+            <div class="location">{{ favorite.location }}</div>
+            <div class="salary">{{ favorite.salary }}</div>
+            <p class="description">{{ favorite.description[:200] }}{% if favorite.description|length > 200 %}...{% endif
+                %}</p>
+            {% if favorite.url %}
+            <a href="{{ favorite.url }}" target="_blank" class="btn btn-primary">View Job</a>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="no-favorites">
+        <p>You haven't saved any jobs yet.</p>
+        <a href="/jobs" class="btn btn-primary">Find Jobs</a>
+    </div>
+    {% endif %}
+</section>
 {% endblock %}
