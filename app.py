@@ -2,7 +2,7 @@
 
 Main Flask app for resume-to-job matching with AI-powered filtering.
 """
-from flask import Flask, render_template, request, jsonify, session, redirect
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
 from werkzeug.utils import secure_filename
 import os
 from datetime import timedelta
@@ -20,6 +20,12 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 
+@app.route('/')
+def home():
+    """Landing page - choose resume upload or create from scratch."""
+    return render_template('index.html')
+
+
 def build_resume_data(form):
     """Build a normalized resume payload from submitted form data."""
     resume_text = form.get('resume_text', '').strip()
@@ -31,18 +37,7 @@ def build_resume_data(form):
             'skills': [skill.strip() for skill in skills.split(',') if skill.strip()]
         }
 
-    skills = [skill.strip() for skill in form.get('skills', '').split(',') if skill.strip()]
-    return {
-        'source': 'form',
-        'name': form.get('full_name', '').strip(),
-        'email': form.get('email', '').strip(),
-        'phone': form.get('phone', '').strip(),
-        'location': form.get('location', '').strip(),
-        'summary': form.get('summary', '').strip(),
-        'skills': skills,
-        'preferred_location': form.get('pref_location', '').strip() or form.get('preferredLocation', '').strip(),
-        'minimum_salary': form.get('min_salary', '').strip(),
-    }
+    return resume_data
 
 
 def generate_job_matches(resume_data):
@@ -105,12 +100,6 @@ def generate_job_matches(resume_data):
     return sorted(jobs, key=lambda item: item['match_score'], reverse=True)
 
 
-@app.route('/')
-def home():
-    """Landing page - choose resume upload or create from scratch."""
-    return render_template('index.html')
-
-
 @app.route('/upload')
 def upload():
     """Upload existing resume page."""
@@ -142,6 +131,7 @@ def parse_resume():
     else:
         resume_data = build_resume_data(request.form)
 
+    # Store in session for backward compatibility, but also save to DB if user is logged in
     session['resume_data'] = resume_data
     session.modified = True
     return jsonify({'status': 'ok', 'resume_data': resume_data})
@@ -258,14 +248,47 @@ Sincerely,
 @app.route('/api/save-job', methods=['POST'])
 def save_job():
     """Save job to favorites."""
-    # TODO: Store in session-based favorites
+    data = request.get_json()
+    job_id = data.get('job_id')
+    job_title = data.get('job_title')
+    company = data.get('company')
+    location = data.get('location')
+    salary = data.get('salary')
+    description = data.get('description')
+    url = data.get('url')
+    source = data.get('source')
+
+    # Get current favorites from session
+    favorites = session.get('favorites', [])
+
+    # Check if already saved
+    for fav in favorites:
+        if fav.get('job_id') == job_id:
+            return jsonify({'status': 'already_saved'})
+
+    # Save to session
+    favorite = {
+        'job_id': job_id,
+        'job_title': job_title,
+        'company': company,
+        'location': location,
+        'salary': salary,
+        'description': description,
+        'url': url,
+        'source': source
+    }
+    favorites.append(favorite)
+    session['favorites'] = favorites
+    session.modified = True
+
     return jsonify({'status': 'saved'})
 
 
 @app.route('/favorites')
 def favorites():
     """View saved/favorite jobs."""
-    return render_template('favorites.html')
+    favorite_jobs = session.get('favorites', [])
+    return render_template('favorites.html', favorites=favorite_jobs)
 
 
 if __name__ == '__main__':

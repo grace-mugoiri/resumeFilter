@@ -67,7 +67,10 @@ function renderJobs(jobs) {
         const card = document.createElement('div');
         card.className = 'job-card';
         card.innerHTML = `
-            <h3>${job.title}</h3>
+            <div class="job-header">
+                <h3>${job.title}</h3>
+                ${job.source ? `<span class="job-source">${job.source}</span>` : ''}
+            </div>
             <div class="company">${job.company}</div>
             <div class="location">${job.location}</div>
             <div class="match-score">Match: ${job.match_score}%</div>
@@ -118,6 +121,43 @@ function applyFilters() {
     });
 
     renderJobs(filteredJobs);
+}
+
+function saveJob() {
+    const job = JSON.parse(sessionStorage.getItem('selectedJob'));
+    if (!job) {
+        alert('Please select a job first.');
+        return;
+    }
+
+    fetch('/api/save-job', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            job_id: job.id,
+            job_title: job.title,
+            company: job.company,
+            location: job.location,
+            salary: job.salary,
+            description: job.description,
+            url: job.url,
+            source: job.source
+        })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'saved') {
+                alert('Job saved to favorites!');
+            } else if (data.status === 'already_saved') {
+                alert('Job is already in your favorites.');
+            } else {
+                alert('Error saving job.');
+            }
+        })
+        .catch(error => {
+            console.error('Error saving job:', error);
+            alert('Error saving job: ' + error.message);
+        });
 }
 
 async function loadJobMatches() {

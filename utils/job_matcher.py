@@ -1,57 +1,268 @@
-"""Job matching and filtering utilities."""
+"""Job matching and filtering utilities.
 
+Supports multiple job APIs:
+1. ArbeitNow - No auth required
+2. JSearch (RapidAPI) - Requires JSEARCH_API_KEY
+3. Adzuna - Requires ADZUNA_API_ID and ADZUNA_API_KEY
+4. Reed - Requires REED_API_KEY
+5. GitHub Jobs Archive - No auth required (limited data)
+"""
+
+import os
 import requests
+from typing import List, Dict
+
+
+def fetch_jobs_from_arbeitnow(search_terms: str) -> List[Dict]:
+    """Fetch jobs from ArbeitNow API (no authentication required)."""
+    try:
+        response = requests.get(
+            'https://www.arbeitnow.com/api/job-board-api',
+            params={'search': search_terms},
+            timeout=10,
+        )
+        response.raise_for_status()
+        raw_jobs = response.json().get('data', [])
+
+        jobs = []
+        for index, raw in enumerate(raw_jobs):
+            job_types = raw.get('job_types') or []
+            salary = ', '.join(job_types) if job_types else ('Remote' if raw.get('remote') else 'N/A')
+            description = raw.get('description', '') or ''
+            description = description.replace('\n', ' ').strip()
+            if len(description) > 320:
+                description = description[:317].rstrip() + '...'
+
+            jobs.append({
+                'id': f"arbeitnow-{raw.get('slug') or index}",
+                'title': raw.get('title', 'Unknown Title'),
+                'company': raw.get('company_name', 'Unknown Company'),
+                'location': raw.get('location', 'Remote') or ('Remote' if raw.get('remote') else 'Unknown'),
+                'salary': salary,
+                'description': description,
+                'url': raw.get('url'),
+                'tags': raw.get('tags', []),
+                'remote': raw.get('remote', False),
+                'source': 'ArbeitNow',
+            })
+        return jobs
+    except requests.RequestException as e:
+        print(f"ArbeitNow API error: {e}")
+        return []
+
+
+def fetch_jobs_from_jsearch(search_terms: str) -> List[Dict]:
+    """Fetch jobs from JSearch API via RapidAPI (requires JSEARCH_API_KEY)."""
+    api_key = os.environ.get('JSEARCH_API_KEY')
+    if not api_key:
+        return []
+
+    try:
+        url = "https://jsearch.p.rapidapi.com/search"
+        headers = {
+            "X-RapidAPI-Key": api_key,
+            "X-RapidAPI-Host": "jsearch.p.rapidapi.com"
+        }
+        params = {
+            "query": search_terms,
+            "page": "1",
+            "num_pages": "1"
+        }
+        response = requests.get(url, headers=headers, params=params, timeout=10)
+        response.raise_for_status()
+        raw_jobs = response.json().get('data', [])
+
+        jobs = []
+        for index, raw in enumerate(raw_jobs):
+            description = raw.get('job_description', '') or ''
+            if len(description) > 320:
+                description = description[:317].rstrip() + '...'
+
+            salary = 'N/A'
+            if raw.get('job_min_salary') and raw.get('job_max_salary'):
+                salary = f"${raw.get('job_min_salary')}-${raw.get('job_max_salary')}"
+
+            jobs.append({
+                'id': f"jsearch-{raw.get('job_id', index)}",
+                'title': raw.get('job_title', 'Unknown Title'),
+                'company': raw.get('employer_name', 'Unknown Company'),
+                'location': raw.get('job_city', 'Remote'),
+                'salary': salary,
+                'description': description,
+                'url': raw.get('job_apply_link'),
+                'remote': raw.get('job_is_remote', False),
+                'source': 'JSearch',
+            })
+        return jobs
+    except requests.RequestException as e:
+        print(f"JSearch API error: {e}")
+        return []
+
+
+def fetch_jobs_from_adzuna(search_terms: str, location: str = '') -> List[Dict]:
+    """Fetch jobs from Adzuna API (requires ADZUNA_API_ID and ADZUNA_API_KEY)."""
+    api_id = os.environ.get('ADZUNA_API_ID')
+    api_key = os.environ.get('ADZUNA_API_KEY')
+    if not api_id or not api_key:
+        return []
+
+    try:
+        url = f"https://api.adzuna.com/v1/api/jobs/us/search/1"
+        params = {
+            "app_id": api_id,
+            "app_key": api_key,
+            "results_per_page": 10,
+            "what": search_terms,
+            "where": location or "",
+        }
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        raw_jobs = response.json().get('results', [])
+
+        jobs = []
+        for index, raw in enumerate(raw_jobs):
+            description = raw.get('description', '') or ''
+            if len(description) > 320:
+                description = description[:317].rstrip() + '...'
+
+            salary = 'N/A'
+            if raw.get('salary_min') and raw.get('salary_max'):
+                salary = f"${raw.get('salary_min')}-${raw.get('salary_max')}"
+
+            jobs.append({
+                'id': f"adzuna-{raw.get('id', index)}",
+                'title': raw.get('title', 'Unknown Title'),
+                'company': raw.get('company', {}).get('display_name', 'Unknown Company'),
+                'location': raw.get('location', {}).get('display_name', 'Remote'),
+                'salary': salary,
+                'description': description,
+                'url': raw.get('redirect_url'),
+                'remote': False,
+                'source': 'Adzuna',
+            })
+        return jobs
+    except requests.RequestException as e:
+        print(f"Adzuna API error: {e}")
+        return []
+
+
+def fetch_jobs_from_reed(search_terms: str) -> List[Dict]:
+    """Fetch jobs from Reed API (requires REED_API_KEY)."""
+    api_key = os.environ.get('REED_API_KEY')
+    if not api_key:
+        return []
+
+    try:
+        url = "https://www.reed.co.uk/api/1.0/search"
+        headers = {"Authorization": f"Bearer {api_key}"}
+        params = {
+            "keywords": search_terms,
+            "resultsToTake": 10,
+        }
+        response = requests.get(url, headers=headers, params=params, timeout=10)
+        response.raise_for_status()
+        raw_jobs = response.json().get('results', [])
+
+        jobs = []
+        for index, raw in enumerate(raw_jobs):
+            description = raw.get('jobDescription', '') or ''
+            if len(description) > 320:
+                description = description[:317].rstrip() + '...'
+
+            jobs.append({
+                'id': f"reed-{raw.get('jobId', index)}",
+                'title': raw.get('jobTitle', 'Unknown Title'),
+                'company': raw.get('employerName', 'Unknown Company'),
+                'location': raw.get('locationName', 'Remote'),
+                'salary': raw.get('salaryDescription', 'N/A'),
+                'description': description,
+                'url': raw.get('jobUrl'),
+                'remote': False,
+                'source': 'Reed',
+            })
+        return jobs
+    except requests.RequestException as e:
+        print(f"Reed API error: {e}")
+        return []
+
+
+def fetch_jobs_from_github(search_terms: str) -> List[Dict]:
+    """Fetch jobs from GitHub Jobs Archive (no authentication required)."""
+    try:
+        url = "https://jobs.github.com/positions.json"
+        params = {
+            "description": search_terms,
+            "page": 1,
+        }
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        raw_jobs = response.json()
+
+        jobs = []
+        for index, raw in enumerate(raw_jobs):
+            description = raw.get('description', '') or ''
+            # Remove HTML tags from description
+            import re
+            description = re.sub('<[^<]+?>', '', description)
+            if len(description) > 320:
+                description = description[:317].rstrip() + '...'
+
+            jobs.append({
+                'id': f"github-{raw.get('id', index)}",
+                'title': raw.get('title', 'Unknown Title'),
+                'company': raw.get('company', 'Unknown Company'),
+                'location': raw.get('location', 'Remote'),
+                'salary': 'N/A',
+                'description': description,
+                'url': raw.get('url'),
+                'remote': raw.get('type', '').lower() == 'full time',
+                'source': 'GitHub Jobs',
+            })
+        return jobs
+    except requests.RequestException as e:
+        print(f"GitHub Jobs API error: {e}")
+        return []
 
 
 def fetch_jobs_from_api(criteria):
     """
-    Fetch live job listings from a public job API.
+    Fetch live job listings from multiple job APIs.
 
     Args:
         criteria: dict with keywords, preferred_location, and optional salary.
 
     Returns:
-        list of normalized job objects
+        list of normalized job objects from multiple sources
     """
     search_terms = criteria.get('search') or criteria.get('keywords') or criteria.get('query') or ''
     if isinstance(search_terms, list):
         search_terms = ' '.join(search_terms)
     search_terms = search_terms.strip() or 'developer'
 
-    try:
-        response = requests.get(
-            'https://www.arbeitnow.com/api/job-board-api',
-            params={'search': search_terms},
-            timeout=12,
-        )
-        response.raise_for_status()
-        raw_jobs = response.json().get('data', [])
-    except requests.RequestException:
-        raw_jobs = []
+    location = criteria.get('preferred_location') or criteria.get('location') or ''
 
-    jobs = []
-    for index, raw in enumerate(raw_jobs):
-        job_types = raw.get('job_types') or []
-        salary = ', '.join(job_types) if job_types else ('Remote' if raw.get('remote') else 'N/A')
-        description = raw.get('description', '') or ''
-        description = description.replace('\n', ' ').strip()
-        if len(description) > 320:
-            description = description[:317].rstrip() + '...'
+    # Fetch from all available APIs
+    all_jobs = []
 
-        jobs.append({
-            'id': raw.get('slug') or f'job-{index}',
-            'title': raw.get('title', 'Unknown Title'),
-            'company': raw.get('company_name', 'Unknown Company'),
-            'location': raw.get('location', 'Remote') or ('Remote' if raw.get('remote') else 'Unknown'),
-            'salary': salary,
-            'description': description,
-            'url': raw.get('url'),
-            'tags': raw.get('tags', []),
-            'remote': raw.get('remote', False),
-            'created_at': raw.get('created_at', ''),
-        })
+    # Always try ArbeitNow (no auth required)
+    all_jobs.extend(fetch_jobs_from_arbeitnow(search_terms))
 
-    return jobs
+    # Try optional APIs if keys are configured
+    all_jobs.extend(fetch_jobs_from_jsearch(search_terms))
+    all_jobs.extend(fetch_jobs_from_adzuna(search_terms, location))
+    all_jobs.extend(fetch_jobs_from_reed(search_terms))
+    all_jobs.extend(fetch_jobs_from_github(search_terms))
+
+    # Remove duplicate jobs based on title and company
+    seen = set()
+    unique_jobs = []
+    for job in all_jobs:
+        key = (job['title'].lower(), job['company'].lower())
+        if key not in seen:
+            seen.add(key)
+            unique_jobs.append(job)
+
+    return unique_jobs
 
 
 def match_resume_to_jobs(resume_data, jobs, top_n=15):

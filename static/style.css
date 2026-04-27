@@ -38,6 +38,39 @@ body {
     font-size: 1.5em;
 }
 
+.flash-messages {
+    margin-bottom: 20px;
+}
+
+.flash-message {
+    background: #f8f9fa;
+    border-left: 4px solid #667eea;
+    padding: 15px 20px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    color: #333;
+}
+
+.header-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.back-link {
+    display: inline-block;
+    margin-bottom: 20px;
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.back-link:hover {
+    text-decoration: underline;
+}
+
 .nav-links {
     display: flex;
     list-style: none;
@@ -55,11 +88,24 @@ body {
     color: #667eea;
 }
 
-/* Header */
 header {
     text-align: center;
     color: white;
     margin: 40px 0;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.auth-links {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 header h1 {
@@ -185,6 +231,39 @@ header h1 {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     max-width: 600px;
     margin: 40px auto;
+}
+
+.auth-page {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.form-control,
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="number"],
+textarea,
+select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 1em;
+    background: #fafbff;
+    margin-top: 8px;
+}
+
+.form-control:focus,
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="tel"]:focus,
+input[type="number"]:focus,
+textarea:focus,
+select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
 }
 
 .form-group {
@@ -347,6 +426,30 @@ header h1 {
     margin-bottom: 8px;
 }
 
+.job-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 8px;
+}
+
+.job-header h3 {
+    color: #667eea;
+    margin: 0;
+    flex: 1;
+}
+
+.job-source {
+    background: #e9ecef;
+    color: #667eea;
+    padding: 4px 8px;
+    border-radius: 14px;
+    font-size: 0.75em;
+    font-weight: 600;
+    white-space: nowrap;
+    margin-left: 10px;
+}
+
 .job-card .company {
     font-weight: 600;
     color: #333;
@@ -378,6 +481,21 @@ header h1 {
 .job-card .salary {
     color: #27ae60;
     font-weight: 600;
+}
+
+/* Favorites */
+.no-favorites {
+    text-align: center;
+    padding: 40px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+}
+
+.no-favorites p {
+    font-size: 1.2em;
+    color: #666;
+    margin-bottom: 20px;
 }
 
 /* Filters Bar */
