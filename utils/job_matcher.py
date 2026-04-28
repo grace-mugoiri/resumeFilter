@@ -6,6 +6,12 @@ Supports multiple job APIs:
 3. Adzuna - Requires ADZUNA_API_ID and ADZUNA_API_KEY
 4. Reed - Requires REED_API_KEY
 5. GitHub Jobs Archive - No auth required (limited data)
+6. USAJobs.gov - No auth required (government jobs)
+7. Remote.co - No auth required (remote jobs)
+8. The Muse - No auth required
+9. Stack Overflow Jobs - No auth required
+10. Dice - No auth required
+11. AngelList - No auth required
 """
 
 import os
@@ -224,6 +230,253 @@ def fetch_jobs_from_github(search_terms: str) -> List[Dict]:
         return []
 
 
+def fetch_jobs_from_usajobs(search_terms: str) -> List[Dict]:
+    """Fetch jobs from USAJobs.gov API (no authentication required)."""
+    try:
+        url = "https://data.usajobs.gov/api/search"
+        params = {
+            "Keyword": search_terms,
+            "ResultsPerPage": 10,
+            "Page": 1,
+        }
+        headers = {
+            "User-Agent": "resume-filter-app@example.com",
+            "Authorization-Key": "",  # USAJobs doesn't require auth but expects this header
+        }
+        response = requests.get(url, params=params, headers=headers, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        raw_jobs = data.get('SearchResult', {}).get('SearchResultItems', [])
+
+        jobs = []
+        for index, raw in enumerate(raw_jobs):
+            job_data = raw.get('MatchedObjectDescriptor', {})
+            position = job_data.get('PositionFormattedDescription', [{}])[0] if job_data.get('PositionFormattedDescription') else {}
+
+            description = position.get('UserArea', {}).get('Details', {}).get('JobSummary', '') or ''
+            if len(description) > 320:
+                description = description[:317].rstrip() + '...'
+
+            salary = 'N/A'
+            if position.get('PositionRemuneration'):
+                salary_info = position.get('PositionRemuneration', [])
+                if salary_info:
+                    salary = salary_info[0].get('MinimumRange', 'N/A') + ' - ' + salary_info[0].get('MaximumRange', 'N/A')
+
+            jobs.append({
+                'id': f"usajobs-{job_data.get('PositionID', index)}",
+                'title': position.get('PositionTitle', 'Unknown Title'),
+                'company': job_data.get('OrganizationName', 'U.S. Government'),
+                'location': position.get('PositionLocationDisplay', [{}])[0].get('CityName', 'Washington, DC'),
+                'salary': salary,
+                'description': description,
+                'url': job_data.get('ApplyURI', [''])[0] if job_data.get('ApplyURI') else '',
+                'remote': position.get('PositionSchedule', [{}])[0].get('Name', '').lower() == 'full-time',
+                'source': 'USAJobs.gov',
+            })
+        return jobs
+    except requests.RequestException as e:
+        print(f"USAJobs API error: {e}")
+        return []
+
+
+def fetch_jobs_from_remoteco(search_terms: str) -> List[Dict]:
+    """Fetch jobs from Remote.co API (no authentication required)."""
+    try:
+        url = "https://remote.co/api/jobs"
+        params = {
+            "search": search_terms,
+            "limit": 10,
+        }
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        raw_jobs = response.json().get('jobs', [])
+
+        jobs = []
+        for index, raw in enumerate(raw_jobs):
+            description = raw.get('description', '') or ''
+            if len(description) > 320:
+                description = description[:317].rstrip() + '...'
+
+            jobs.append({
+                'id': f"remoteco-{raw.get('id', index)}",
+                'title': raw.get('title', 'Unknown Title'),
+                'company': raw.get('company', {}).get('name', 'Unknown Company'),
+                'location': 'Remote',
+                'salary': raw.get('salary', 'N/A'),
+                'description': description,
+                'url': raw.get('url'),
+                'remote': True,
+                'source': 'Remote.co',
+            })
+        return jobs
+    except requests.RequestException as e:
+        print(f"Remote.co API error: {e}")
+        return []
+
+
+def fetch_jobs_from_themuse(search_terms: str) -> List[Dict]:
+    """Fetch jobs from The Muse API (no authentication required)."""
+    try:
+        url = "https://www.themuse.com/api/public/jobs"
+        params = {
+            "page": 0,
+            "descending": False,
+            "api_key": "",  # The Muse allows some requests without API key
+        }
+        if search_terms:
+            params["category"] = search_terms
+
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        raw_jobs = response.json().get('results', [])
+
+        jobs = []
+        for index, raw in enumerate(raw_jobs):
+            description = raw.get('contents', '') or ''
+            if len(description) > 320:
+                description = description[:317].rstrip() + '...'
+
+            salary = 'N/A'
+            if raw.get('salary_min') and raw.get('salary_max'):
+                salary = f"${raw.get('salary_min')}-${raw.get('salary_max')}"
+
+            jobs.append({
+                'id': f"themuse-{raw.get('id', index)}",
+                'title': raw.get('name', 'Unknown Title'),
+                'company': raw.get('company', {}).get('name', 'Unknown Company'),
+                'location': raw.get('locations', [{}])[0].get('name', 'Remote'),
+                'salary': salary,
+                'description': description,
+                'url': raw.get('refs', {}).get('landing_page'),
+                'remote': raw.get('type') == 'remote',
+                'source': 'The Muse',
+            })
+        return jobs
+    except requests.RequestException as e:
+        print(f"The Muse API error: {e}")
+        return []
+
+
+def fetch_jobs_from_stackoverflow(search_terms: str) -> List[Dict]:
+    """Fetch jobs from Stack Overflow Jobs API (no authentication required)."""
+    try:
+        url = "https://api.stackexchange.com/2.3/jobs"
+        params = {
+            "order": "desc",
+            "sort": "creation",
+            "site": "stackoverflow",
+            "pagesize": 10,
+            "tagged": search_terms.replace(' ', ';'),
+            "filter": "default",
+        }
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        raw_jobs = response.json().get('items', [])
+
+        jobs = []
+        for index, raw in enumerate(raw_jobs):
+            description = raw.get('description', '') or ''
+            if len(description) > 320:
+                description = description[:317].rstrip() + '...'
+
+            jobs.append({
+                'id': f"stackoverflow-{raw.get('job_id', index)}",
+                'title': raw.get('title', 'Unknown Title'),
+                'company': raw.get('company', {}).get('name', 'Unknown Company'),
+                'location': raw.get('location', 'Remote'),
+                'salary': 'N/A',
+                'description': description,
+                'url': raw.get('link'),
+                'remote': 'remote' in raw.get('title', '').lower(),
+                'source': 'Stack Overflow Jobs',
+            })
+        return jobs
+    except requests.RequestException as e:
+        print(f"Stack Overflow Jobs API error: {e}")
+        return []
+
+
+def fetch_jobs_from_dice(search_terms: str) -> List[Dict]:
+    """Fetch jobs from Dice API (no authentication required for basic search)."""
+    try:
+        url = "https://job-search-api.svc.dhigroupinc.com/v1/dice/jobs/search"
+        params = {
+            "q": search_terms,
+            "countryCode2": "US",
+            "radius": 30,
+            "radiusUnit": "mi",
+            "page": 1,
+            "pageSize": 10,
+        }
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        raw_jobs = data.get('data', [])
+
+        jobs = []
+        for index, raw in enumerate(raw_jobs):
+            description = raw.get('summary', '') or ''
+            if len(description) > 320:
+                description = description[:317].rstrip() + '...'
+
+            jobs.append({
+                'id': f"dce-{raw.get('id', index)}",
+                'title': raw.get('title', 'Unknown Title'),
+                'company': raw.get('companyName', 'Unknown Company'),
+                'location': raw.get('jobLocation', {}).get('displayName', 'Remote'),
+                'salary': raw.get('salary', 'N/A'),
+                'description': description,
+                'url': raw.get('detailsPageUrl'),
+                'remote': raw.get('isRemote', False),
+                'source': 'Dice',
+            })
+        return jobs
+    except requests.RequestException as e:
+        print(f"Dice API error: {e}")
+        return []
+
+
+def fetch_jobs_from_angellist(search_terms: str) -> List[Dict]:
+    """Fetch jobs from AngelList Jobs API (no authentication required)."""
+    try:
+        url = "https://api.angel.co/1/jobs"
+        params = {
+            "q": search_terms,
+            "type": "full-time",
+            "per_page": 10,
+        }
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        raw_jobs = response.json().get('jobs', [])
+
+        jobs = []
+        for index, raw in enumerate(raw_jobs):
+            description = raw.get('description', '') or ''
+            if len(description) > 320:
+                description = description[:317].rstrip() + '...'
+
+            salary = 'N/A'
+            if raw.get('salary_min') and raw.get('salary_max'):
+                salary = f"${raw.get('salary_min')}-${raw.get('salary_max')}"
+
+            jobs.append({
+                'id': f"angellist-{raw.get('id', index)}",
+                'title': raw.get('title', 'Unknown Title'),
+                'company': raw.get('startup', {}).get('name', 'Unknown Company'),
+                'location': raw.get('angellist_url', 'Remote'),  # AngelList doesn't provide location in basic API
+                'salary': salary,
+                'description': description,
+                'url': f"https://angel.co/company/{raw.get('startup', {}).get('slug')}/jobs/{raw.get('id')}",
+                'remote': raw.get('remote_ok', False),
+                'source': 'AngelList',
+            })
+        return jobs
+    except requests.RequestException as e:
+        print(f"AngelList API error: {e}")
+        return []
+
+
 def fetch_jobs_from_api(criteria):
     """
     Fetch live job listings from multiple job APIs.
@@ -252,6 +505,14 @@ def fetch_jobs_from_api(criteria):
     all_jobs.extend(fetch_jobs_from_adzuna(search_terms, location))
     all_jobs.extend(fetch_jobs_from_reed(search_terms))
     all_jobs.extend(fetch_jobs_from_github(search_terms))
+
+    # Always try free APIs
+    all_jobs.extend(fetch_jobs_from_usajobs(search_terms))
+    all_jobs.extend(fetch_jobs_from_remoteco(search_terms))
+    all_jobs.extend(fetch_jobs_from_themuse(search_terms))
+    all_jobs.extend(fetch_jobs_from_stackoverflow(search_terms))
+    all_jobs.extend(fetch_jobs_from_dice(search_terms))
+    all_jobs.extend(fetch_jobs_from_angellist(search_terms))
 
     # Remove duplicate jobs based on title and company
     seen = set()
