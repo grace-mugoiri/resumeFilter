@@ -58,25 +58,11 @@ resumeFilter/
 
 Visit `http://localhost:5000` in your browser.
 
-## API Integrations Needed
+## Contributors
 
-- **Indeed API** - Job listings
-- **LinkedIn API** - Job data (optional)
-- **OpenAI API** - Resume analysis and cover letter generation
-
-## TODO
-
-- [ ] Implement resume parsing (PDF/DOCX extraction)
-- [ ] Integrate job board APIs
-- [ ] Build LLM matching logic
-- [ ] Add cover letter generation
-- [ ] Implement session-based job favorites
-- [ ] Add user authentication (optional future)
-- [ ] Deploy to production
-
-## Development
-
-Currently on the `feature/resume-filter` branch for active development.
+| Name | Role |
+|------|------|
+| [Grace Mugoiri](https://github.com/grace-mugoiri) | Developer |
 
 ## License
 
